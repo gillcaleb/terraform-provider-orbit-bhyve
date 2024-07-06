@@ -5,11 +5,12 @@ package provider
 
 import (
 	"context"
-	"net/http"
+	"os"
 
 	"github.com/gillcaleb/orbit-bhyve-go-client/pkg/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -46,14 +47,14 @@ func (p *bhyveProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 	resp.Schema = schema.Schema{
 			Attributes: map[string]schema.Attribute{
 					"deviceid": schema.StringAttribute{
-							Optional: false,
+							Required: true,
 							Sensitive: true,
 					},
 					"email": schema.StringAttribute{
-							Optional: false,
+							Required: true,
 					},
 					"password": schema.StringAttribute{
-							Optional:  true,
+							Required:  true,
 							Sensitive: true,
 					},
 			},
@@ -82,7 +83,7 @@ func (p *bhyveProvider) Configure(ctx context.Context, req provider.ConfigureReq
 			)
 	}
 
-	if config.Username.IsUnknown() {
+	if config.Email.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
 					path.Root("email"),
 					"Unknown Bhyve Email",
@@ -107,8 +108,8 @@ func (p *bhyveProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
 
-	host := os.Getenv("BHYVE_HOST")
-	username := os.Getenv("BHYVE_USERNAME")
+	deviceid := os.Getenv("BHYVE_DEVICEID")
+	email := os.Getenv("BHYVE_USERNAME")
 	password := os.Getenv("BHYVE_PASSWORD")
 
 	if !config.DeviceId.IsNull() {
@@ -160,46 +161,31 @@ func (p *bhyveProvider) Configure(ctx context.Context, req provider.ConfigureReq
 			return
 	}
   
-	config := client.Config{
+	clientconfig := client.Config{
 		Endpoint: "https://api.orbitbhyve.com/v1",
 		Email: email,
 		Password: password,
 		DeviceId: deviceid,
   }
 	// Create a new Bhyve client using the configuration values
-	client, err := client.NewClient(config)
-	if err != nil {
-			resp.Diagnostics.AddError(
-					"Unable to Create Bhyve API Client",
-					"An unexpected error occurred when creating the Bhyve API client. "+
-							"If the error is not clear, please contact the provider developers.\n\n"+
-							"Bhyve Client Error: "+err.Error(),
-			)
-			return
-	}
+	c := client.NewClient(clientconfig)
 
 	// Make the Bhyve client available during DataSource and Resource
 	// type Configure methods.
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	resp.DataSourceData = c
+	resp.ResourceData = c
 }
 
 
 func (p *bhyveProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		NewZoneResource,
 	}
 }
 
 func (p *bhyveProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewExampleDataSource,
-	}
-}
-
-func (p *bhyveProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		NewExampleFunction,
+		NewZoneDataSource,
 	}
 }
 

@@ -9,7 +9,6 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-testing v1.8.0
-	github.com/hashicorp/terraform-provider-scaffolding-framework v0.0.0-20240624204805-4697ba36c863
 )
 
 require (

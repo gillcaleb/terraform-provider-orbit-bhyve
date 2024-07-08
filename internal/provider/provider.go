@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure bhyveProvider satisfies various provider interfaces.
@@ -169,6 +170,10 @@ func (p *bhyveProvider) Configure(ctx context.Context, req provider.ConfigureReq
   }
 	// Create a new Bhyve client using the configuration values
 	c := client.NewClient(clientconfig)
+	err := c.Init()
+	if err != nil {
+		  tflog.Error(ctx, "Error initializing client")
+	}
 
 	// Make the Bhyve client available during DataSource and Resource
 	// type Configure methods.
@@ -186,6 +191,12 @@ func (p *bhyveProvider) Resources(ctx context.Context) []func() resource.Resourc
 func (p *bhyveProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewZoneDataSource,
+	}
+}
+
+func (p *bhyveProvider) Functions(ctx context.Context) []func() function.Function {
+	return []func() function.Function{
+		NewExampleFunction,
 	}
 }
 
